@@ -20,7 +20,7 @@ from multiprocessing import Pool, Process, cpu_count
 from time import sleep
 
 def prepare_procedure(argv):
-    atcoder, pid, url = argv
+    atcoder, pid, url, extension = argv
     samples = []
 
     # データ取得
@@ -44,7 +44,7 @@ def prepare_procedure(argv):
 
     dirname = "workspace/%s/%s" % (contestid, pid)
     os.makedirs(dirname, exist_ok=True)
-    solution_name = "%s/%s.cpp" % (dirname, pid)
+    solution_name = "%s/%s." % (dirname, pid) + extension
 
     # 既にコードが存在しているなら上書きする前にバックアップを取る
     if os.path.exists(solution_name):
@@ -59,7 +59,10 @@ def prepare_procedure(argv):
 
     # 自動生成済みコードを格納
     with open(solution_name, "w") as f:
-        from templates.cpp.cpp_code_generator import code_generator
+        if extension == "py":
+            from templates.py.py_code_generator import code_generator
+        elif extension == 'cpp':
+            from templates.cpp.cpp_code_generator import code_generator
         f.write(code_generator(result))
 
     # サンプルを格納
@@ -75,7 +78,7 @@ def prepare_procedure(argv):
     print("prepared %s!" % pid)
 
 
-def prepare_workspace(contestid):
+def prepare_workspace(contestid, extension='cpp'):
     atcoder = AtCoder(AccountInformation.username, AccountInformation.password)
 
     while True:
@@ -86,7 +89,7 @@ def prepare_workspace(contestid):
         print("retrying to get task list.")
 
     p = Pool(processes=cpu_count())
-    p.map(prepare_procedure, [(atcoder, pid, url) for pid, url in plist.items()])
+    p.map(prepare_procedure, [(atcoder, pid, url, extension) for pid, url in plist.items()])
 
 
 if __name__ == "__main__":
@@ -94,5 +97,9 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         contestid = sys.argv[1]
         prepare_workspace(contestid)
+    elif len(sys.argv) == 3:
+        contestid = sys.argv[1]
+        extension = sys.argv[2]
+        prepare_workspace(contestid, extension)
     else:
         print("%s [contest_id]" % sys.argv[0])

@@ -44,9 +44,11 @@ However you can make another language's template easily by modifying the code!
 If you want to use this tool as an atcoder client (beta ver), the following example will be helpful. 
 
 クライアントとしてこのツールを使いたい人(C++ユーザー)は以下のような感じで実行すると良いです．
+(拡張子(extension)は C++: cpp / Python: py のどちらかを指定してください．)
+(拡張子を省略するとC++指定になります．)
 
 ```
-$ python3 ./AtCoderClient.py [contestid]
+$ python3 ./AtCoderClient.py [contestid] [extension]
 AtCoder username: username
 AtCoder password: ***
 $ cd ./workspace/[contestid]/[problem_id]/
