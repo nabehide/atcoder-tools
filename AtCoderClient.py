@@ -75,6 +75,15 @@ def prepare_procedure(argv):
         with open(outfile, "w") as file:
             file.write(out_content)
 
+    # prepare scripts of test/submit
+    if extension == "py":
+        with open(dirname + "/testScript.py", "w") as f:
+            from templates.py.prepare_scripts import prepare_testScript
+            f.write(prepare_testScript())
+        with open(dirname + "/submitScript.py", "w") as f:
+            from templates.py.prepare_scripts import prepare_submitScript
+            f.write(prepare_submitScript(contestid, pid, 'Python3'))
+
     print("prepared %s!" % pid)
 
 

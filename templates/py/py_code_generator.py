@@ -192,10 +192,6 @@ def code_generator(predict_result=None):
     if predict_result is not None:
         formal_arguments, actual_arguments = generate_arguments(predict_result.var_information)
 
-        print('dir(predict_result)', dir(predict_result))
-        print('analyzed_root', predict_result.analyzed_root)
-        print('var_information', predict_result.var_information)
-
         input_part_lines = generate_input_part(
             node=predict_result.analyzed_root,
             var_information=predict_result.var_information,
