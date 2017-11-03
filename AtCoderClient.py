@@ -2,8 +2,7 @@
 
 import sys
 import os
-import glob
-import subprocess
+
 sys.path.append(".")
 sys.path.append("core")
 from AtCoder import AtCoder
@@ -19,8 +18,11 @@ import FormatPredictor
 from multiprocessing import Pool, Process, cpu_count
 from time import sleep
 
+atcoder = None
+
+
 def prepare_procedure(argv):
-    atcoder, pid, url, extension = argv
+    pid, url, py = argv
     samples = []
 
     # データ取得
@@ -41,10 +43,12 @@ def prepare_procedure(argv):
         result = None
         print("Problem %s: failed to analyze input format." % pid)
 
-
     dirname = "workspace/%s/%s" % (contestid, pid)
     os.makedirs(dirname, exist_ok=True)
-    solution_name = "%s/%s." % (dirname, pid) + extension
+    if py is True:
+        solution_name = "%s/%s." % (dirname, pid) + 'py'
+    else:
+        solution_name = "%s/%s." % (dirname, pid) + 'cpp'
 
     # 既にコードが存在しているなら上書きする前にバックアップを取る
     if os.path.exists(solution_name):
@@ -56,12 +60,11 @@ def prepare_procedure(argv):
                 break
             backup_id += 1
 
-
     # 自動生成済みコードを格納
     with open(solution_name, "w") as f:
-        if extension == "py":
+        if py is True:
             from templates.py.py_code_generator import code_generator
-        elif extension == 'cpp':
+        else:
             from templates.cpp.cpp_code_generator import code_generator
         f.write(code_generator(result))
 
@@ -76,7 +79,7 @@ def prepare_procedure(argv):
             file.write(out_content)
 
     # prepare scripts of test/submit
-    if extension == "py":
+    if py is True:
         with open(dirname + "/testScript.py", "w") as f:
             from templates.py.prepare_scripts import prepare_testScript
             f.write(prepare_testScript())
@@ -87,8 +90,11 @@ def prepare_procedure(argv):
     print("prepared %s!" % pid)
 
 
-def prepare_workspace(contestid, extension='cpp'):
-    atcoder = AtCoder(AccountInformation.username, AccountInformation.password)
+def prepare_workspace(contestid, without_login, py):
+    global atcoder
+    atcoder = AtCoder()
+    if not without_login:
+        atcoder.login(AccountInformation.username, AccountInformation.password)
 
     while True:
         plist = atcoder.get_problem_list(contestid)
@@ -98,17 +104,23 @@ def prepare_workspace(contestid, extension='cpp'):
         print("retrying to get task list.")
 
     p = Pool(processes=cpu_count())
-    p.map(prepare_procedure, [(atcoder, pid, url, extension) for pid, url in plist.items()])
+    p.map(prepare_procedure, [(pid, url, py) for pid, url in plist.items()])
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) == 2:
-        contestid = sys.argv[1]
-        prepare_workspace(contestid)
-    elif len(sys.argv) == 3:
-        contestid = sys.argv[1]
-        extension = sys.argv[2]
-        prepare_workspace(contestid, extension)
-    else:
-        print("%s [contest_id]" % sys.argv[0])
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("contestid",
+                        help="contest ID")
+    parser.add_argument("--without-login",
+                        action="store_true",
+                        help="download testdata without login")
+    parser.add_argument("--py",
+                        action="store_true",
+                        help="prepare scripts for Python")
+    args = parser.parse_args()
+    contestid = args.contestid
+    without_login = args.without_login
+    py = args.py
+    prepare_workspace(args.contestid, without_login, py)
