@@ -18,7 +18,8 @@ def main(contestid, pid, lang, fileName):
         source += line
     f.close()
 
-    atcoder = AtCoder(AccountInformation.username, AccountInformation.password)
+    atcoder = AtCoder()
+    atcoder.login(AccountInformation.username, AccountInformation.password)
     atcoder.submit_source_code(contestid, pid, lang, source)
 
 
