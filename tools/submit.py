@@ -12,6 +12,18 @@ except ImportError:
 
 
 def main(contestid, pid, lang, fileName):
+
+    print("Are you sure to submit? (y/n)")
+    select = input()
+    if select == 'y':
+        pass
+    elif select == 'n':
+        print("Canceled")
+        return
+    else:
+        print("Please input \"y\" or \"n\"")
+        return
+
     source = ""
     f = open(fileName, 'r')
     for line in f:
