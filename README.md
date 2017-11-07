@@ -45,12 +45,8 @@ If you want to use this tool as an atcoder client (beta ver), the following exam
 
 クライアントとしてこのツールを使いたい人(C++ユーザー)は以下のような感じで実行すると良いです．
 
-(拡張子(extension)は cpp / py のどちらかを指定してください．)
-
-(拡張子を省略するとcpp指定になります．)
-
 ```
-$ python3 ./AtCoderClient.py [contestid] [extension]
+$ python3 ./AtCoderClient.py [contestid]
 AtCoder username: username
 AtCoder password: ***
 $ cd ./workspace/[contestid]/[problem_id]/
@@ -62,7 +58,7 @@ $ python tester.py
 Python3の場合は以下のように実行してください．
 
 ```
-$ python3 ./AtCoderClient.py [contestid] py
+$ python3 ./AtCoderClient.py [contestid] --py
 $ cd ./workspace/[contestid]/[problem_id]/
 $ python3 testScript.py  # check testcase
 $ python3 submitScript.py  # submit
