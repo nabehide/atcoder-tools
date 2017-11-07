@@ -64,9 +64,10 @@ def prepare_procedure(argv):
     with open(solution_name, "w") as f:
         if py is True:
             from templates.py.py_code_generator import code_generator
+            f.write(code_generator(information, samples))
         else:
             from templates.cpp.cpp_code_generator import code_generator
-        f.write(code_generator(result))
+            f.write(code_generator(result))
 
     # サンプルを格納
     for num, (in_content, out_content) in enumerate(samples):

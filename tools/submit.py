@@ -13,7 +13,7 @@ except ImportError:
 
 def main(contestid, pid, lang, fileName):
 
-    print("Are you sure to submit? (y/n)")
+    print("Are you sure to submit? (y/n) ", end='')
     select = input()
     if select == 'y':
         pass

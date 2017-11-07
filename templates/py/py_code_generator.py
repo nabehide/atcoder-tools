@@ -1,209 +1,96 @@
-import sys
 import os
+from TemplateEngine import render
 mydir = os.path.dirname(__file__)
 
-from functools import reduce
-from TemplateEngine import render
 
-def tab(n):
-    if n <= 0:
-        return ""
-    else:
-        return "\t" * n
+def formatInformation(information):
+    return information.split('\n')[:-1]
 
 
-def indent(lines):
-    return [tab(1)+line for line in lines]
+def formatSamples(samples):
+    # lst = []
+    # for s in samples:
+    #     lst.append(s[0].split('\n'))
+    # return lst
+    return samples[0][0].split('\n')[:-1]
 
 
-def convert_to_cpptype_string(vtype):
-    '''
-    :param v: 変数の型(Python Type)
-    :return: その型に対応するC++における文字列表現
-    '''
-    if(vtype == float):
-        return "long double"
-    elif vtype == int:
-        return "long long"
-    elif vtype == str:
-        return "string"
-    else:
-        raise NotImplementedError
+def formatInfo(info, ignore):
+    lst = info.split(' ')
+    for i, l in enumerate(lst):
+        idx = l.find('_')
+        if idx != -1:
+            lst[i] = lst[i][:idx]
+    lst = [i for i in lst if i not in ignore]
+    ignore += lst
+    return lst, ignore
 
 
-def input_code(vtype,vname_for_input):
-    if vtype == float:
-        return 'scanf("%Lf",&{name})'.format(name=vname_for_input)
-    elif vtype == int:
-        return 'scanf("%lld",&{name})'.format(name=vname_for_input)
-    elif vtype == str:
-        return 'cin >> {name}'.format(name=vname_for_input)
-    else:
-        raise NotImplementedError
-
-
-def generate_declaration(v):
-    '''
-    :param v: 変数情報
-    :return: 変数vの宣言パートを作る ex) array[1..n] → vector<int> array = vector<int>(n-1+1);
-    '''
-
-    dim = len(v.indexes)
-    typename = convert_to_cpptype_string(v.type)
-
-    if dim == 0:
-        type_template_before = "{type}".format(type=typename)
-        type_template_after = ""
-    elif dim == 1:
-        type_template_before = "vector<{type}>".format(type=typename)
-        type_template_after = "({size}+1)".format(size=v.indexes[0].zero_indexed().max_index)
-    elif dim == 2:
-        type_template_before = "vector<vector<{type}>>".format(type=typename)
-        type_template_after = "({row_size}+1,vector<{type}>({col_size}+1))".format(
-            type=typename,
-            row_size=v.indexes[0].zero_indexed().max_index,
-            col_size=v.indexes[1].zero_indexed().max_index
-        )
-    else:
-        raise NotImplementedError
-
-    line = "{declaration} {name}{constructor};".format(
-        name=v.name,
-        declaration=type_template_before,
-        constructor=type_template_after
-    )
-    return line
-
-
-def generate_arguments(var_information):
-    '''
-    :param var_information: 全変数の情報
-    :return: 仮引数、実引数の文字列表現(順序は両者同じ);
-        - formal_params: 仮引数 ex) int a, string b, vector<int> ccc
-        - actual_params : 実引数 ex) a, b, ccc
-    '''
-    formal_lst = []
-    actual_lst = []
-    for name, v in var_information.items():
-        dim = len(v.indexes)
-        typename = convert_to_cpptype_string(v.type)
-
-        if dim == 0:
-            type_template = "{type}".format(type=typename)
-        elif dim == 1:
-            type_template = "vector<{type}>".format(type=typename)
-        elif dim == 2:
-            type_template = "vector<vector<{type}>>".format(type=typename)
-        else:
-            raise NotImplementedError
-
-        # formal_lst.append("{type} {name}".format(type=type_template, name=name))
-        formal_lst.append(name)
-        actual_lst.append(name)
-    formal_params = ", ".join(formal_lst)
-    actual_params = ", ".join(actual_lst)
-    return formal_params, actual_params
-
-
-def generate_input_part(node, var_information, inputted, undeclared, depth, indexes):
-    '''
-    :param node: FormatPredictorで得られる解析結果の木(const)
-    :param var_information: 変数の情報(const)
-    :param inputted: 入力が完了した変数名集合 (呼ぶときはset())
-    :param undeclared: 入力が完了していない変数名集合 (呼ぶときはset(現れる変数全部))
-    :param depth: ネストの深さ (呼ぶときは0で呼ぶ)
-    :param indexes: 二重ループで再帰してるとき、indexes=["i","j"]みたいな感じになってる。 (呼ぶときは[])
-    :return: 入力コードの列
-    '''
-    lines = []
-    def declare_if_ready():
-        '''
-            サブルーチンです。例えば
-                K N a_1 ...a_N　
-            という入力に対して、Nを代入する前に
-                vector<int> a(N);
-            を宣言してしまうと悲しいので、既に必要な変数が全て入力されたものから宣言していく。
-        '''
-        nonlocal lines, inputted, undeclared, var_information
-        will_declare = []
-        for vname in undeclared:
-            related_vars = reduce(lambda a, b: a + b,
-                                  [index.min_index.get_all_varnames() + index.max_index.get_all_varnames()
-                                   for index in var_information[vname].indexes], []
-                                  )
-            if all([(var in inputted) for var in related_vars]):
-                will_declare.append(vname)
-
-        for vname in will_declare:
-            lines.append(generate_declaration(var_information[vname]))
-            undeclared.remove(vname)
-
-
-    if depth == 0:
-        # 入力の開始時、何の制約もない変数をまず全部宣言する (depth=-1 <=> 入力の開始)
-        declare_if_ready()
-
-    if node.pointers != None:
-        '''
-            何かしらの塊を処理(インデックスを持っている場合はループ)
-            [a,b,c] or [ai,bi,ci](min<=i<=max) みたいな感じ
-        '''
-
-        if node.index is None:
-            for child in node.pointers:
-                lines += generate_input_part(child, var_information,
-                                            inputted, undeclared, depth + 1, indexes)
-        else:
-            loopv = "i" if indexes == [] else "j"
-
-            # ループの開始
-            lines.append("for(int {x} = {start} ; {x} <= {end} ; {x}++){{".format(
-                x=loopv,
-                start=node.index.zero_indexed().min_index,
-                end=node.index.zero_indexed().max_index)
-            )
-            # ループの内側
-            for child in node.pointers:
-                lines += indent(generate_input_part(child, var_information,
-                                                   inputted, undeclared, depth + 1, indexes + [loopv]))
-            # ループの外
-            if node.index != None:
-                lines.append("}")
-    else:
-        ''' 変数が最小単位まで分解されたときの入力処理 '''
-        vname_for_input = node.varname + ("" if indexes == [] else "[" + "][".join(indexes) + "]")
-        vtype = var_information[node.varname].type
-
-        line = "{input_code};".format(input_code=input_code(vtype, vname_for_input))
-        lines.append(line)
-        inputted.add(node.varname)
-
-        declare_if_ready()
-
-    return lines
-
-
-def code_generator(predict_result=None):
-    with open("{dir}/template_success.cpp".format(dir=mydir),"r") as f:
+def code_generator(information=None, samples=None):
+    with open("{dir}/template_success.cpp".format(dir=mydir), "r") as f:
         template_success = f.read()
     with open("{dir}/template_failure.cpp".format(dir=mydir), "r") as f:
         template_failure = f.read()
 
-    if predict_result is not None:
-        formal_arguments, actual_arguments = generate_arguments(predict_result.var_information)
+    ignore = ['...', ':']
 
-        input_part_lines = generate_input_part(
-            node=predict_result.analyzed_root,
-            var_information=predict_result.var_information,
-            inputted=set(),
-            undeclared=set(predict_result.var_information.keys()),
-            depth=0,
-            indexes=[]
-        )
+    if information is not None:
 
+        information = formatInformation(information)
+        samples = formatSamples(samples)
+
+        input_part_lines = ""
+        for idx, (info, sample) in enumerate(zip(information, samples)):
+            formattedInfo = info.split(' ')
+            formattedSample = sample.split(' ')
+            isVariableInt = formattedSample[0].isdigit()
+
+            # if len(formattedInfo) == len(formattedSample):
+            line = ""
+            if 1 == len(formattedInfo) and formattedInfo[0] not in ignore:
+                line += formattedInfo[0] + " = "
+                line += "int(input())\n" if isVariableInt else "list(input())\n"
+            else:
+                formattedInfo, ignore = formatInfo(info, ignore)
+                if len(formattedInfo) == 0:
+                    pass
+                elif formattedInfo == [formattedInfo[0]] * len(formattedInfo):
+                    if (idx != len(information) - 1) and information[idx + 1][0] == ':':
+                        if isVariableInt:
+                            line += formattedInfo[0] + " = [list(map(int, input().split())) for i in range(" + 'N' + ")]\n"
+                        else:
+                            line += formattedInfo[0] + " = [list(input()) for i in range(" + 'N' + ")]\n"
+                    else:
+                        if isVariableInt:
+                            line += formattedInfo[0] + " = list(map(int, input().split()))\n"
+                        else:
+                            line += formattedInfo[0] + " = list(input())\n"
+                elif (idx != len(information) - 1) and information[idx + 1][0] == ':':
+                    for i in formattedInfo:
+                        line += i + " = []\n"
+                    line += "for i in range(" + 'N' + "):\n"
+                    for i in range(len(formattedInfo)):
+                        line += "temp" + str(i)
+                        if i != len(formattedInfo) - 1:
+                            line += ", "
+                    if isVariableInt:
+                        line += " = list(map(int, input().split()))\n"
+                    else:
+                        line += " = list(input())\n"
+                    for i, f in enumerate(formattedInfo):
+                        line += "    "
+                        line += f + ".append(temp" + str(i) + ")\n"
+                else:
+                    for i, info in enumerate(formattedInfo):
+                        line += info
+                        if i != len(formattedInfo) - 1:
+                            line += ", "
+                    line += " = list(map(int, input().split()))\n"
+
+            input_part_lines += line
+            ignore.append('')
 
         code = render(template_success,
-                      actual_arguments=actual_arguments,
                       input_part=input_part_lines)
     else:
         code = template_failure
