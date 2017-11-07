@@ -35,13 +35,14 @@ def prepare_procedure(argv):
         print("Problem %s: no samples" % pid)
 
     # 入力形式を解析
-    try:
-        result = FormatPredictor.format_predictor(information, samples)
-        if result is None:
-            raise Exception
-    except Exception:
-        result = None
-        print("Problem %s: failed to analyze input format." % pid)
+    if py is not True:
+        try:
+            result = FormatPredictor.format_predictor(information, samples)
+            if result is None:
+                raise Exception
+        except Exception:
+            result = None
+            print("Problem %s: failed to analyze input format." % pid)
 
     dirname = "workspace/%s/%s" % (contestid, pid)
     os.makedirs(dirname, exist_ok=True)
