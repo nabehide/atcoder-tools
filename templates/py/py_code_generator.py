@@ -30,9 +30,9 @@ def formatInfo(info, ignore):
 
 
 def code_generator(information=None, samples=None):
-    with open("{dir}/template_success.cpp".format(dir=mydir), "r") as f:
+    with open("{dir}/template_success.py".format(dir=mydir), "r") as f:
         template_success = f.read()
-    with open("{dir}/template_failure.cpp".format(dir=mydir), "r") as f:
+    with open("{dir}/template_failure.py".format(dir=mydir), "r") as f:
         template_failure = f.read()
 
     ignore = ['...', ':']
