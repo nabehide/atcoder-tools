@@ -1,5 +1,8 @@
 import os
-from TemplateEngine import render
+
+from core.TemplateEngine import render
+
+
 mydir = os.path.dirname(__file__)
 
 
