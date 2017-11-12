@@ -1,6 +1,6 @@
 import sys
 sys.path.append("../../../tools")
-import tester_py
+import tester
 
 
-tester_py.do_test()
+tester.do_test(py=True)

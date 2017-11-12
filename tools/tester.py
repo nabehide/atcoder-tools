@@ -34,10 +34,13 @@ class MultipleCppFilesError(Exception):
     pass
 
 
-def do_test(exec_file=None):
-    exec_files = [fname for fname in glob.glob(
-        './*') if os.access(fname, os.X_OK) and fname.find("test.py") == -1 and fname.find(
-        ".cpp") == -1 and not fname.endswith(".txt")]  # cppやtxtを省くのは一応の Cygwin 対策
+def do_test(exec_file=None, py=False):
+    if not py:
+        exec_files = [fname for fname in glob.glob(
+            './*') if os.access(fname, os.X_OK) and fname.find("test.py") == -1 and fname.find(
+            ".cpp") == -1 and not fname.endswith(".txt")]  # cppやtxtを省くのは一応の Cygwin 対策
+    else:
+        exec_files = [fname for fname in glob.glob('*') if fname in ['A.py', 'B.py', 'C.py', 'D.py']]
     if exec_file is None:
         if len(exec_files) == 0:
             raise NoExecutableFileError
@@ -61,8 +64,12 @@ def do_test(exec_file=None):
             out_data = ""
             status = "WA"
             try:
-                out_data = subprocess.check_output(
-                    [exec_file, ""], stdin=inf, timeout=1)
+                if not py:
+                    out_data = subprocess.check_output(
+                        [exec_file, ""], stdin=inf, timeout=1)
+                else:
+                    out_data = subprocess.check_output(
+                        ["python", exec_file], stdin=inf, timeout=1)
             except subprocess.TimeoutExpired:
                 status = "TLE(1s)"
             except subprocess.CalledProcessError:
