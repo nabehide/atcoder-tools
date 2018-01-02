@@ -66,11 +66,11 @@ def generate_input_part(information, samples):
                     """
                     if isInt:
                         line += formattedInfo[0] + \
-                                " = [list(map(int, input().split())) " + \
-                                "for i in range(" + 'N' + ")]\n"
+                            " = [list(map(int, input().split())) " + \
+                            "for i in range(" + 'N' + ")]\n"
                     else:
                         line += formattedInfo[0] + " = [list(input()) " + \
-                                "for i in range(" + 'N' + ")]\n"
+                            "for i in range(" + 'N' + ")]\n"
                 else:
                     """ In case 1 dimensional variable is in one line.
                         e.g.
@@ -78,7 +78,7 @@ def generate_input_part(information, samples):
                     """
                     if isInt:
                         line += formattedInfo[0] + \
-                                " = list(map(int, input().split()))\n"
+                            " = list(map(int, input().split()))\n"
                     else:
                         line += formattedInfo[0] + " = list(input())\n"
             elif (idx != len(splittedInfo) - 1) and \
@@ -92,6 +92,7 @@ def generate_input_part(information, samples):
                 for i in formattedInfo:
                     line += i + " = []\n"
                 line += "for i in range(" + 'N' + "):\n"
+                line += "    "
                 for i in range(len(formattedInfo)):
                     line += "temp" + str(i)
                     if i != len(formattedInfo) - 1:
