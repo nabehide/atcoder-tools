@@ -11,19 +11,21 @@ def formatInfo(info, ignore):
         When a variable is added into "info", it's also added  into "ignore"
         to avoid duplication.
     """
-    lst = info.split(' ')
-    for i, l in enumerate(lst):
+    formattedInfo = info.split(' ')
+    suffix = []
+    for i, l in enumerate(formattedInfo):
         idx = l.find('_')
         if idx != -1:
-            lst[i] = lst[i][:idx]
-    lst = [i for i in lst if i not in ignore]
-    ignore += lst
-    return lst, ignore
+            formattedInfo[i] = formattedInfo[i][:idx]
+            suffix.append(l[idx + 1:].replace("{", "").replace("}", ""))
+    formattedInfo = [i for i in formattedInfo if i not in ignore]
+    ignore += formattedInfo
+    return formattedInfo, suffix, ignore
 
 
 def generate_input_part(information, samples):
     input_part_lines = ""
-    ignore = ['...', ':']
+    ignore = ['...', ':', '']
     splittedInfo = information.split('\n')[:-1]
     splittedSamples = samples[0][0].split('\n')[:-1]
 
@@ -41,7 +43,7 @@ def generate_input_part(information, samples):
             line += formattedInfo[0] + " = "
             line += "int(input())\n" if isInt else "list(input())\n"
         else:
-            formattedInfo, ignore = formatInfo(info, ignore)
+            formattedInfo, suffix, ignore = formatInfo(info, ignore)
             if len(formattedInfo) == 0:
                 """ In case no variable is in one line (e.g. ":")
                     or the variables have already be processed.
@@ -67,10 +69,10 @@ def generate_input_part(information, samples):
                     if isInt:
                         line += formattedInfo[0] + \
                             " = [list(map(int, input().split())) " + \
-                            "for i in range(" + 'N' + ")]\n"
+                            "for i in range(" + suffix[-1] + ")]\n"
                     else:
                         line += formattedInfo[0] + " = [list(input()) " + \
-                            "for i in range(" + 'N' + ")]\n"
+                            "for i in range(" + suffix[-1] + ")]\n"
                 else:
                     """ In case 1 dimensional variable is in one line.
                         e.g.
@@ -89,9 +91,10 @@ def generate_input_part(information, samples):
                       :
                       A_N, B_N, ...
                 """
+                _, suffix_2, _ = formatInfo(splittedInfo[idx + 2], ignore)
                 for i in formattedInfo:
                     line += i + " = []\n"
-                line += "for i in range(" + 'N' + "):\n"
+                line += "for i in range(" + suffix_2[-1] + "):\n"
                 line += "    "
                 for i in range(len(formattedInfo)):
                     line += "temp" + str(i)
